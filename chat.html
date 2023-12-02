@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Chat</title>
+</head>
+<body>
+
+<div id="chat-container">
+  <div id="user-info" style="display: none;">
+    <p>Welcome, <span id="user-display-name"></span>! You are logged in.</p>
+  </div>
+  <ul id="message-list"></ul>
+  <form id="message-form">
+    <input type="text" id="receiver-input" placeholder="Receiver's Email" disabled>
+    <input type="text" id="message-input" placeholder="Type your message" disabled>
+    <button type="submit" disabled>Send</button>
+  </form>
+  <button id="login-btn">Log In</button>
+  <button id="logout-btn" style="display: none;">Log Out</button>
+</div>
+
+<!-- Include Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database.js"></script>
+
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHr6y5Tm0NjKuL_MnQXvuLCPfUXQBwLZc",
+    authDomain: "trychat-bc2b1.firebaseapp.com",
+    projectId: "trychat-bc2b1",
+    storageBucket: "trychat-bc2b1.appspot.com",
+    messagingSenderId: "438114989547",
+    appId: "1:438114989547:web:5a53fc351db531445955ae",
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.database();
+  const messagesRef = db.ref("messages");
+
+  const messageList = document.getElementById("message-list");
+  const messageForm = document.getElementById("message-form");
+  const receiverInput = document.getElementById("receiver-input");
+  const messageInput = document.getElementById("message-input");
+  const loginBtn = document.getElementById("login-btn");
+  const logoutBtn = document.getElementById("logout-btn");
+  const userInfoContainer = document.getElementById("user-info");
+  const userDisplayName = document.getElementById("user-display-name");
+
+  let currentUserId;
+
+  // Authentication event listener
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      // User is signed in
+      currentUserId = user.uid;
+      messageInput.removeAttribute("disabled");
+      receiverInput.removeAttribute("disabled");
+      messageForm.querySelector("button").removeAttribute("disabled");
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      userInfoContainer.style.display = "block";
+      userDisplayName.textContent = user.displayName || user.email;
+      // Additional logic for a signed-in user
+    } else {
+      // No user is signed in
+      currentUserId = null;
+      messageInput.setAttribute("disabled", true);
+      receiverInput.setAttribute("disabled", true);
+      messageForm.querySelector("button").setAttribute("disabled", true);
+      loginBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+      userInfoContainer.style.display = "none";
+      // Additional logic for a signed-out user
+    }
+  });
+
+  // Log In button click event
+  loginBtn.addEventListener("click", () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider);
+  });
+
+  // Log Out button click event
+  logoutBtn.addEventListener("click", () => {
+    firebase.auth().signOut();
+  });
+
+  messageForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const receiverEmail = receiverInput.value.trim();
+    const messageText = messageInput.value.trim();
+
+    if (receiverEmail !== "" && messageText !== "") {
+      const receiverId = getUserIdByEmail(receiverEmail);
+      if (receiverId) {
+        sendMessage(currentUserId, receiverId, messageText);
+        messageInput.value = "";
+      } else {
+        console.error("Receiver not found");
+      }
+    }
+  });
+
+  // Function to get user ID by email
+  function getUserIdByEmail(email) {
+    // You need to implement logic to fetch the user ID based on the email
+    // You might use Firebase Authentication to achieve this
+    // Example: firebase.auth().getUserByEmail(email).uid (this is just a placeholder)
+    return "placeholderUserId";
+  }
+
+  function sendMessage(senderId, receiverId, message) {
+    messagesRef.push().set({
+      senderId: senderId,
+      receiverId: receiverId,
+      text: message,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+    });
+  }
+</script>
+
+</body>
+</html>
